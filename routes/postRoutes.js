@@ -10,9 +10,7 @@ const {
   createPost,
   getFeed,
   likePost,
-  savePost,
-  commentOnPost,
-  followUser
+  commentOnPost
 } = require("../controllers/postController");
 
 // Configure multer for image uploads
@@ -48,10 +46,6 @@ router.get("/feed", protect, getFeed);
 
 // Interaction routes
 router.post("/:id/like", protect, likePost);
-router.post("/:id/save", protect, savePost);
 router.post("/:id/comment", protect, commentOnPost);
-
-// Follow route
-router.post("/follow/:id", protect, followUser);
 
 module.exports = router;

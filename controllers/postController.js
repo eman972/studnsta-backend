@@ -4,16 +4,20 @@ const User = require("../models/User");
 // CREATE POST
 exports.createPost = async (req, res) => {
   try {
-    const { content, class: postClass, board, subject, chapter } = req.body;
+    const { content, subject, topic, tags } = req.body;
     
     const post = await Post.create({
       content,
       image: req.file ? `/uploads/${req.file.filename}` : null,
-      class: postClass,
-      board,
       subject,
-      chapter,
+      topic,
+      tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())) : [],
       author: req.user.id,
+    });
+
+    // Link the post to the user's profile array
+    await User.findByIdAndUpdate(req.user.id, {
+      $push: { posts: post._id }
     });
 
     const populatedPost = await Post.findById(post._id).populate('author', 'name avatar role');
@@ -24,32 +28,29 @@ exports.createPost = async (req, res) => {
   }
 };
 
-// GET TODAY'S POSTS FROM FOLLOWED USERS (CRITICAL FEATURE)
+// GET GLOBAL FEED (PAGINATED)
 exports.getFeed = async (req, res) => {
   try {
-    const userId = req.user.id;
-    
-    // Get user's following list
-    const user = await User.findById(userId).populate('following');
-    const followingIds = user.following.map(followedUser => followedUser._id);
-    
-    // Get today's start and end
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-    
-    // Get posts from followed users created today
-    const posts = await Post.find({
-      author: { $in: followingIds },
-      createdAt: { $gte: startOfDay, $lt: endOfDay }
-    })
-    .populate('author', 'name avatar role')
-    .populate('likes', 'name avatar')
-    .populate('saves', 'name avatar')
-    .populate('comments.user', 'name avatar')
-    .sort({ createdAt: -1 });
-    
-    res.json(posts);
+    const { subject, page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const query = {};
+    if (subject) query.subject = subject;
+
+    const total = await Post.countDocuments(query);
+    const posts = await Post.find(query)
+      .populate('author', 'name avatar role')
+      .populate('comments.user', 'name avatar')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    res.json({
+      posts,
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(total / limit),
+      total
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -80,31 +81,6 @@ exports.likePost = async (req, res) => {
   }
 };
 
-// SAVE POST
-exports.savePost = async (req, res) => {
-  try {
-    const postId = req.params.id;
-    const userId = req.user.id;
-    
-    const post = await Post.findById(postId);
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
-    
-    // Toggle save
-    if (post.saves.includes(userId)) {
-      post.saves.pull(userId);
-    } else {
-      post.saves.push(userId);
-    }
-    
-    await post.save();
-    res.json({ saved: post.saves.includes(userId), savesCount: post.saves.length });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 // COMMENT ON POST
 exports.commentOnPost = async (req, res) => {
   try {
@@ -126,46 +102,6 @@ exports.commentOnPost = async (req, res) => {
     const newComment = populatedPost.comments[populatedPost.comments.length - 1];
     
     res.json(newComment);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// FOLLOW/UNFOLLOW USER
-exports.followUser = async (req, res) => {
-  try {
-    const userIdToFollow = req.params.id;
-    const currentUserId = req.user.id;
-    
-    if (userIdToFollow === currentUserId) {
-      return res.status(400).json({ message: "Cannot follow yourself" });
-    }
-    
-    const currentUser = await User.findById(currentUserId);
-    const userToFollow = await User.findById(userIdToFollow);
-    
-    if (!userToFollow) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    
-    // Toggle follow
-    if (currentUser.following.includes(userIdToFollow)) {
-      currentUser.following.pull(userIdToFollow);
-      userToFollow.followers.pull(currentUserId);
-      userToFollow.followCount = Math.max(0, userToFollow.followCount - 1);
-    } else {
-      currentUser.following.push(userIdToFollow);
-      userToFollow.followers.push(currentUserId);
-      userToFollow.followCount += 1;
-    }
-    
-    await currentUser.save();
-    await userToFollow.save();
-    
-    res.json({ 
-      following: currentUser.following.includes(userIdToFollow),
-      followCount: userToFollow.followCount 
-    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

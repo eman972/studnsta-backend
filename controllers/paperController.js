@@ -5,7 +5,7 @@ const path = require("path");
 // UPLOAD PAPER (PDF)
 exports.uploadPaper = async (req, res) => {
   try {
-    const { title, description, class: paperClass, board, subject, chapter, year, paperType } = req.body;
+    const { title, description, subject, topic, year, paperType, tags } = req.body;
     
     if (!req.file) {
       return res.status(400).json({ message: "PDF file is required" });
@@ -15,12 +15,11 @@ exports.uploadPaper = async (req, res) => {
       title,
       description,
       pdfUrl: `/uploads/papers/${req.file.filename}`,
-      class: paperClass,
-      board,
       subject,
-      chapter,
+      topic,
       year,
       paperType,
+      tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())) : [],
       uploadedBy: req.user.id,
     });
 
@@ -35,17 +34,19 @@ exports.uploadPaper = async (req, res) => {
 // GET PAPERS WITH FILTERING
 exports.getPapers = async (req, res) => {
   try {
-    const { class: filterClass, board, subject, chapter, paperType, year, search } = req.query;
+    const { subject, topic, paperType, year, search, tags } = req.query;
     
     // Build filter object
     const filter = {};
     
-    if (filterClass) filter.class = filterClass;
-    if (board) filter.board = board;
     if (subject) filter.subject = subject;
-    if (chapter) filter.chapter = chapter;
+    if (topic) filter.topic = topic;
     if (paperType) filter.paperType = paperType;
     if (year) filter.year = year;
+    if (tags) {
+      const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());
+      filter.tags = { $in: tagArray };
+    }
     
     // Text search
     if (search) {
@@ -113,18 +114,14 @@ exports.deletePaper = async (req, res) => {
 // GET FILTER OPTIONS
 exports.getFilterOptions = async (req, res) => {
   try {
-    const classes = ["9th", "10th"];
-    const boards = ["BISERWP", "FBISE"];
     const subjects = ["Math", "Physics", "Chemistry", "Biology", "Computer", "English", "Urdu", "Pak Studies", "Islamiat"];
-    const paperTypes = ["Past Paper", "Model Paper", "Key Book", "Notes"];
+    const paperTypes = ["Past Paper", "Key Book", "Notes"];
     
     // Get available years
     const years = await Paper.distinct('year');
     const chapters = await Paper.distinct('chapter');
     
     res.json({
-      classes,
-      boards,
       subjects,
       paperTypes,
       years: years.sort(),

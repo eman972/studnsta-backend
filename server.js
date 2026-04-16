@@ -15,8 +15,20 @@ const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
+const imagesDir = path.join(uploadsDir, 'images');
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir);
+}
+const papersDir = path.join(uploadsDir, 'papers');
+if (!fs.existsSync(papersDir)) {
+  fs.mkdirSync(papersDir);
+}
 
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 
 // Serve static files from uploads directory
@@ -33,6 +45,24 @@ app.use("/api/papers", paperRoutes);
 
 const profileRoutes = require("./routes/profileRoutes");
 app.use("/api/profile", profileRoutes);
+
+const quizRoutes = require("./routes/quizRoutes");
+app.use("/api/quizzes", quizRoutes);
+
+const quizAttemptRoutes = require("./routes/quizAttemptRoutes");
+app.use("/api/quiz-attempts", quizAttemptRoutes);
+
+const questionRoutes = require("./routes/questionRoutes");
+app.use("/api/questions", questionRoutes);
+
+const quizResultRoutes = require("./routes/quizResultRoutes");
+app.use("/api/quiz-results", quizResultRoutes);
+
+const quizApiRoutes = require("./routes/quizApiRoutes");
+app.use("/api/quiz", quizApiRoutes);
+
+const liveQuizRoutes = require("./routes/liveQuizRoutes");
+app.use("/api/live-quiz", liveQuizRoutes);
 
 app.get("/", (req, res) => {
   res.send("🚀 Studnsta Backend Running Successfully");

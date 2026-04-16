@@ -4,37 +4,24 @@ const User = require("../models/User");
 // GET USER PROFILE
 exports.getUserProfile = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const targetUserId = req.query.userId || req.user.id;
+    const isOwner = targetUserId.toString() === req.user.id.toString();
     
-    // Get user with populated posts
-    const user = await User.findById(userId)
-      .populate({
-        path: 'posts',
-        match: { author: userId },
-        options: { sort: { createdAt: -1 } }
-      });
+    const user = await User.findById(targetUserId);
     
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Group posts by subject
-    const postsBySubject = {};
-    user.posts.forEach(post => {
-      const subject = post.subject || 'General';
-      if (!postsBySubject[subject]) {
-        postsBySubject[subject] = [];
-      }
-      postsBySubject[subject].push(post);
-    });
+    const totalPosts = await Post.countDocuments({ author: targetUserId });
 
     // Get user stats
     const stats = {
-      totalPosts: user.posts.length,
-      followers: user.followers.length,
-      following: user.following.length,
-      subjects: Object.keys(postsBySubject).length
+      totalPosts,
+      subjects: 0 
     };
+
+    // Follow logic removed as per new architecture
 
     res.json({
       user: {
@@ -42,17 +29,16 @@ exports.getUserProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        class: user.class,
-        board: user.board,
         avatar: user.avatar,
-        followCount: user.followCount,
         bio: user.bio,
         tagline: user.tagline,
         activeNote: user.activeNote,
         createdAt: user.createdAt
       },
-      postsBySubject,
-      stats
+      postsBySubject: {},
+      stats,
+      isFollowing: false,
+      isOwner
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -80,12 +66,9 @@ exports.uploadAvatar = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        class: user.class,
-        board: user.board,
         avatar: user.avatar,
         bio: user.bio,
-        tagline: user.tagline,
-        activeNote: user.activeNote
+        tagline: user.tagline
       }
     });
   } catch (error) {
@@ -118,17 +101,10 @@ exports.getAllUsers = async (req, res) => {
     const currentUser = await User.findById(req.user.id);
     
     const users = await User.find({ _id: { $ne: req.user.id } })
-      .select('name role class board avatar followCount')
-      .sort({ followCount: -1 })
+      .select('name role avatar bio tagline')
       .limit(50);
       
-    // Add isFollowing flag
-    const usersWithFollowStatus = users.map(u => ({
-      ...u.toObject(),
-      isFollowing: currentUser.following.includes(u._id)
-    }));
-    
-    res.json(usersWithFollowStatus);
+    res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -138,14 +114,12 @@ exports.getAllUsers = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, avatar, email, class: userClass, board, bio, tagline, activeNote } = req.body;
+    const { name, avatar, email, bio, tagline, activeNote } = req.body;
     
     const updateData = {};
     if (name) updateData.name = name;
     if (avatar) updateData.avatar = avatar;
     if (email) updateData.email = email;
-    if (userClass) updateData.class = userClass;
-    if (board) updateData.board = board;
     if (bio !== undefined) updateData.bio = bio;
     if (tagline !== undefined) updateData.tagline = tagline;
     if (activeNote !== undefined) updateData.activeNote = activeNote;
@@ -163,8 +137,6 @@ exports.updateProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        class: user.class,
-        board: user.board,
         avatar: user.avatar,
         bio: user.bio,
         tagline: user.tagline,
