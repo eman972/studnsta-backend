@@ -9,31 +9,26 @@ connectDB();
 
 const app = express();
 
-// Create uploads directory if it doesn't exist
-const fs = require('fs');
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
-const imagesDir = path.join(uploadsDir, 'images');
-if (!fs.existsSync(imagesDir)) {
-  fs.mkdirSync(imagesDir);
-}
-const papersDir = path.join(uploadsDir, 'papers');
-if (!fs.existsSync(papersDir)) {
-  fs.mkdirSync(papersDir);
-}
+// Create uploads directories if they don't exist
+const fs = require("fs");
+const uploadsDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+const imagesDir = path.join(uploadsDir, "images");
+if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir);
+const papersDir = path.join(uploadsDir, "papers");
+if (!fs.existsSync(papersDir)) fs.mkdirSync(papersDir);
 
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(express.json());
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Routes
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
@@ -64,12 +59,15 @@ app.use("/api/quiz", quizApiRoutes);
 const liveQuizRoutes = require("./routes/liveQuizRoutes");
 app.use("/api/live-quiz", liveQuizRoutes);
 
+// AI Routes (Groq)
+const aiRoutes = require("./routes/aiRoutes");
+app.use("/api/ai", aiRoutes);
+
 app.get("/", (req, res) => {
   res.send("🚀 Studnsta Backend Running Successfully");
 });
 
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log(`🔥 Server running on port ${PORT}`);
 });

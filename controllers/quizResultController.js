@@ -1,3 +1,4 @@
+const mongoose = require("mongoose"); // ← was missing, causing crashes
 const QuizResult = require("../models/QuizResult");
 const Question = require("../models/Question");
 
@@ -16,30 +17,37 @@ exports.createQuizResult = async (req, res) => {
       status,
       difficulty,
       quizType,
-      tags
+      tags,
     } = req.body;
 
-    // Validate required fields
-    if (!studentId || !subject || !topic || !totalQuestions || !timeTaken || !answers) {
+    if (
+      !studentId ||
+      !subject ||
+      !topic ||
+      !totalQuestions ||
+      !timeTaken ||
+      !answers
+    ) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Validate answers array
     if (!Array.isArray(answers) || answers.length === 0) {
       return res.status(400).json({ message: "Answers array is required" });
     }
 
-    // Validate each answer
     for (let i = 0; i < answers.length; i++) {
       const answer = answers[i];
-      if (!answer.questionId || !answer.selectedAnswer || typeof answer.isCorrect !== 'boolean') {
-        return res.status(400).json({ 
-          message: `Invalid answer at index ${i}. Each answer must have questionId, selectedAnswer, and isCorrect` 
+      if (
+        !answer.questionId ||
+        !answer.selectedAnswer ||
+        typeof answer.isCorrect !== "boolean"
+      ) {
+        return res.status(400).json({
+          message: `Invalid answer at index ${i}. Each answer must have questionId, selectedAnswer, and isCorrect`,
         });
       }
     }
 
-    // Calculate score if not provided
     let calculatedScore = score;
     if (calculatedScore === undefined) {
       calculatedScore = Math.round((correctAnswers / totalQuestions) * 100);
@@ -57,12 +65,17 @@ exports.createQuizResult = async (req, res) => {
       status: status || "completed",
       difficulty: difficulty || "medium",
       quizType: quizType || "practice",
-      tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())) : [],
+      tags: tags
+        ? Array.isArray(tags)
+          ? tags
+          : tags.split(",").map((t) => t.trim())
+        : [],
     });
 
-    // Populate student details
-    const populatedResult = await QuizResult.findById(quizResult._id)
-      .populate("studentId", "name email");
+    const populatedResult = await QuizResult.findById(quizResult._id).populate(
+      "studentId",
+      "name email",
+    );
 
     res.status(201).json({
       message: "Quiz result created successfully",
@@ -76,34 +89,26 @@ exports.createQuizResult = async (req, res) => {
 // GET ALL QUIZ RESULTS (with filtering)
 exports.getAllQuizResults = async (req, res) => {
   try {
-    const { 
-      studentId, 
-      subject, 
-      topic, 
-      status, 
-      difficulty, 
-      quizType, 
-      tags,
-      page = 1, 
-      limit = 20 
+    const {
+      studentId,
+      subject,
+      topic,
+      status,
+      difficulty,
+      quizType,
+      page = 1,
+      limit = 20,
     } = req.query;
 
     let filter = {};
-    
-    // Apply filters
     if (studentId) filter.studentId = studentId;
     if (subject) filter.subject = subject;
     if (topic) filter.topic = topic;
     if (status) filter.status = status;
     if (difficulty) filter.difficulty = difficulty;
     if (quizType) filter.quizType = quizType;
-    if (tags) {
-      const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());
-      filter.tags = { $in: tagArray };
-    }
 
     const quizResults = await QuizResult.find(filter)
-      .populate("studentId", "name email")
       .sort({ completedAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -111,7 +116,7 @@ exports.getAllQuizResults = async (req, res) => {
     const total = await QuizResult.countDocuments(filter);
 
     res.json({
-      quizResults: quizResults.map(result => result.toAPIResponse()),
+      quizResults: quizResults.map((result) => result.toAPIResponse()),
       totalPages: Math.ceil(total / limit),
       currentPage: page,
       total,
@@ -124,8 +129,10 @@ exports.getAllQuizResults = async (req, res) => {
 // GET QUIZ RESULT BY ID
 exports.getQuizResultById = async (req, res) => {
   try {
-    const quizResult = await QuizResult.findById(req.params.id)
-      .populate("studentId", "name email");
+    const quizResult = await QuizResult.findById(req.params.id).populate(
+      "studentId",
+      "name email",
+    );
 
     if (!quizResult) {
       return res.status(404).json({ message: "Quiz result not found" });
@@ -141,11 +148,19 @@ exports.getQuizResultById = async (req, res) => {
 exports.getStudentQuizResults = async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { subject, topic, status, difficulty, page = 1, limit = 20 } = req.query;
+    const {
+      subject,
+      topic,
+      status,
+      difficulty,
+      page = 1,
+      limit = 20,
+    } = req.query;
 
-    // Check if user has access (student can only view own results, teachers can view all)
     if (req.user.role === "student" && studentId !== req.user._id.toString()) {
-      return res.status(403).json({ message: "You can only view your own quiz results" });
+      return res
+        .status(403)
+        .json({ message: "You can only view your own quiz results" });
     }
 
     let filter = { studentId };
@@ -162,7 +177,7 @@ exports.getStudentQuizResults = async (req, res) => {
     const total = await QuizResult.countDocuments(filter);
 
     res.json({
-      quizResults: quizResults.map(result => result.toAPIResponse()),
+      quizResults: quizResults.map((result) => result.toAPIResponse()),
       totalPages: Math.ceil(total / limit),
       currentPage: page,
       total,
@@ -175,7 +190,15 @@ exports.getStudentQuizResults = async (req, res) => {
 // GET CURRENT USER'S QUIZ RESULTS
 exports.getMyQuizResults = async (req, res) => {
   try {
-    const { subject, topic, status, difficulty, quizType, page = 1, limit = 20 } = req.query;
+    const {
+      subject,
+      topic,
+      status,
+      difficulty,
+      quizType,
+      page = 1,
+      limit = 20,
+    } = req.query;
 
     let filter = { studentId: req.user._id };
     if (subject) filter.subject = subject;
@@ -192,7 +215,7 @@ exports.getMyQuizResults = async (req, res) => {
     const total = await QuizResult.countDocuments(filter);
 
     res.json({
-      quizResults: quizResults.map(result => result.toAPIResponse()),
+      quizResults: quizResults.map((result) => result.toAPIResponse()),
       totalPages: Math.ceil(total / limit),
       currentPage: page,
       total,
@@ -213,16 +236,12 @@ exports.updateQuizResult = async (req, res) => {
       return res.status(404).json({ message: "Quiz result not found" });
     }
 
-    // Update result
     if (score !== undefined) result.score = score;
     if (feedback !== undefined) result.feedback = feedback;
 
     await result.save();
 
-    res.json({
-      message: "Quiz result updated successfully",
-      result
-    });
+    res.json({ message: "Quiz result updated successfully", result });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -251,11 +270,13 @@ exports.getTopScores = async (req, res) => {
   try {
     const { subject, topic, limit = 10 } = req.query;
 
-    const topScores = await QuizResult.getTopScores(subject, topic, parseInt(limit));
+    const topScores = await QuizResult.getTopScores(
+      subject,
+      topic,
+      parseInt(limit),
+    );
 
-    res.json({
-      topScores: topScores.map(result => result.toAPIResponse()),
-    });
+    res.json({ topScores: topScores.map((result) => result.toAPIResponse()) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -266,18 +287,15 @@ exports.getStudentSubjectStats = async (req, res) => {
   try {
     const { studentId, subject } = req.params;
 
-    // Check if user has access
     if (req.user.role === "student" && studentId !== req.user._id.toString()) {
-      return res.status(403).json({ message: "You can only view your own statistics" });
+      return res
+        .status(403)
+        .json({ message: "You can only view your own statistics" });
     }
 
     const stats = await QuizResult.getSubjectStats(studentId, subject);
 
-    res.json({
-      studentId,
-      subject,
-      topicStats: stats,
-    });
+    res.json({ studentId, subject, topicStats: stats });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -286,14 +304,20 @@ exports.getStudentSubjectStats = async (req, res) => {
 // GET USER PERFORMANCE OVERVIEW
 exports.getUserPerformanceOverview = async (req, res) => {
   try {
-    const studentId = req.user.role === "student" ? req.user._id : req.params.studentId;
+    const studentId =
+      req.user.role === "student"
+        ? req.user._id
+        : req.params.studentId || req.user._id;
 
-    // Check if user has access
-    if (req.user.role === "student" && studentId !== req.user._id.toString()) {
-      return res.status(403).json({ message: "You can only view your own performance overview" });
+    if (
+      req.user.role === "student" &&
+      studentId.toString() !== req.user._id.toString()
+    ) {
+      return res
+        .status(403)
+        .json({ message: "You can only view your own performance overview" });
     }
 
-    // Overall statistics
     const overallStats = await QuizResult.aggregate([
       { $match: { studentId: new mongoose.Types.ObjectId(studentId) } },
       {
@@ -305,16 +329,15 @@ exports.getUserPerformanceOverview = async (req, res) => {
           totalTime: { $sum: "$timeTaken" },
           avgTimePerQuiz: { $avg: "$timeTaken" },
           completedQuizzes: {
-            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
           },
           cancelledQuizzes: {
-            $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] }
-          }
-        }
-      }
+            $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+          },
+        },
+      },
     ]);
 
-    // Subject-wise statistics
     const subjectStats = await QuizResult.aggregate([
       { $match: { studentId: new mongoose.Types.ObjectId(studentId) } },
       {
@@ -323,17 +346,16 @@ exports.getUserPerformanceOverview = async (req, res) => {
           totalQuizzes: { $sum: 1 },
           avgScore: { $avg: "$score" },
           bestScore: { $max: "$score" },
-          lastAttempt: { $max: "$completedAt" }
-        }
+          lastAttempt: { $max: "$completedAt" },
+        },
       },
-      { $sort: { avgScore: -1 } }
+      { $sort: { avgScore: -1 } },
     ]);
 
-    // Recent performance trend (last 10 quizzes)
     const recentResults = await QuizResult.find({ studentId })
       .sort({ completedAt: -1 })
       .limit(10)
-      .select('score completedAt subject topic');
+      .select("score completedAt subject topic");
 
     res.json({
       overview: overallStats[0] || {
@@ -343,10 +365,10 @@ exports.getUserPerformanceOverview = async (req, res) => {
         totalTime: 0,
         avgTimePerQuiz: 0,
         completedQuizzes: 0,
-        cancelledQuizzes: 0
+        cancelledQuizzes: 0,
       },
       subjectStats,
-      recentTrend: recentResults.map(result => result.toAPIResponse()),
+      recentTrend: recentResults.map((result) => result.toAPIResponse()),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
