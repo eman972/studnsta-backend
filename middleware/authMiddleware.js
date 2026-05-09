@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const User = require("../models/user");
 
 const protect = async (req, res, next) => {
   let token;
@@ -10,17 +10,16 @@ const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(" ")[1];
-
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.id).select("-password");
-      next();
+      return next();
     } catch (error) {
-      res.status(401).json({ message: "Not authorized" });
+      return res.status(401).json({ message: "Not authorized, token invalid" });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: "No token provided" });
+    return res.status(401).json({ message: "No token provided" });
   }
 };
 
