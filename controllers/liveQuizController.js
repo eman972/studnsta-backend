@@ -81,7 +81,7 @@ exports.createLiveQuiz = async (req, res) => {
 // GET LIVE QUIZ BY ID (for students)
 exports.getLiveQuizById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id.trim();
 
     const quiz = await Quiz.findById(id)
       .populate("createdBy", "name email")
@@ -109,6 +109,8 @@ exports.getLiveQuizById = async (req, res) => {
       duration: quiz.duration,
       questionCount: quiz.questions.length,
       createdBy: quiz.createdBy,
+      isLive: quiz.isLive,
+      isPublished: quiz.isPublished,
       liveSettings: quiz.liveSettings,
       questions: quiz.questions.map(q => ({
         questionId: q._id,

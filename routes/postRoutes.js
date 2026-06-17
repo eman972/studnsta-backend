@@ -10,7 +10,9 @@ const {
   createPost,
   getFeed,
   likePost,
-  commentOnPost
+  commentOnPost,
+  savePost,
+  getSavedPosts
 } = require("../controllers/postController");
 
 // Configure multer for image uploads
@@ -40,6 +42,9 @@ const upload = multer({
   },
 });
 
+// GET SAVED POSTS route (Must be before /:id routes)
+router.get("/saved", protect, getSavedPosts);
+
 // POST routes
 router.post("/", protect, upload.single("image"), createPost);
 router.get("/feed", protect, getFeed);
@@ -47,5 +52,6 @@ router.get("/feed", protect, getFeed);
 // Interaction routes
 router.post("/:id/like", protect, likePost);
 router.post("/:id/comment", protect, commentOnPost);
+router.post("/:id/save", protect, savePost);
 
 module.exports = router;

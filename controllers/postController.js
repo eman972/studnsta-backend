@@ -107,3 +107,44 @@ exports.commentOnPost = async (req, res) => {
   }
 };
 
+// SAVE / UNSAVE POST
+exports.savePost = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const userId = req.user.id;
+    
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    
+    // Toggle save
+    if (post.saves.includes(userId)) {
+      post.saves.pull(userId);
+    } else {
+      post.saves.push(userId);
+    }
+    
+    await post.save();
+    res.json({ saved: post.saves.includes(userId), savesCount: post.saves.length });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET SAVED POSTS
+exports.getSavedPosts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const savedPosts = await Post.find({ saves: userId })
+      .populate('author', 'name avatar role')
+      .populate('comments.user', 'name avatar')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      posts: savedPosts
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

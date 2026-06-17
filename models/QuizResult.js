@@ -28,7 +28,6 @@ const quizResultSchema = new mongoose.Schema({
   subject: {
     type: String,
     required: true,
-    enum: ["Math", "Physics", "Chemistry", "Biology", "Computer", "English", "Urdu", "Pak Studies", "Islamiat"],
   },
   topic: {
     type: String,

@@ -4,7 +4,6 @@ const questionSchema = new mongoose.Schema(
   {
     subject: {
       type: String,
-      enum: ["Math", "Physics", "Chemistry", "Biology", "Computer", "English", "Urdu", "Pak Studies", "Islamiat"],
       required: true,
     },
     topic: {
