@@ -5,6 +5,10 @@ const Question = require("../models/Question");
 // CREATE LIVE QUIZ 
 exports.createLiveQuiz = async (req, res) => {
   try {
+    if (req.user.role.toLowerCase() === "student") {
+      return res.status(403).json({ message: "Students are not authorized to create live quizzes" });
+    }
+
     const { title, description, subject, topic, timer, questionIds } = req.body;
 
     // Validate required fields

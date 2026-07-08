@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const paperSchema = new mongoose.Schema(
+const noteSchema = new mongoose.Schema(
   {
     title: {
       type: String,
@@ -14,7 +14,7 @@ const paperSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    paperType: {
+    noteType: {
       type: String,
       default: "Notes",
     },
@@ -32,12 +32,12 @@ const paperSchema = new mongoose.Schema(
       trim: true,
     }]
   },
-  { timestamps: true }
+  { timestamps: true, collection: 'notes' }
 );
 
 // Index for performance
-paperSchema.index({ subject: 1, topic: 1 });
-paperSchema.index({ paperType: 1, year: 1 });
-paperSchema.index({ title: "text", description: "text", topic: "text", tags: "text" });
+noteSchema.index({ subject: 1, topic: 1 });
+noteSchema.index({ noteType: 1, year: 1 });
+noteSchema.index({ title: "text", description: "text", topic: "text", tags: "text" });
 
-module.exports = mongoose.model("Paper", paperSchema);
+module.exports = mongoose.model("Note", noteSchema);

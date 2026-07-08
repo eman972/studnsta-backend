@@ -206,13 +206,13 @@ quizResultSchema.methods.toAPIResponse = function() {
     streak: this.streak,
     improvement: this.improvement,
     performanceLevel: this.getPerformanceLevel(),
-    answers: this.answers.map(answer => ({
+    answers: this.answers ? this.answers.map(answer => ({
       questionId: answer.questionId,
       selectedAnswer: answer.selectedAnswer,
       correctAnswer: answer.correctAnswer,
       explanation: answer.explanation,
       timeSpent: answer.timeSpent
-    }))
+    })) : []
   };
 };
 

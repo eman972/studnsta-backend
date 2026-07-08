@@ -1,47 +1,51 @@
-const Paper = require("../models/Paper");
+const Note = require("../models/Note");
 const fs = require("fs");
 const path = require("path");
 
-// UPLOAD PAPER (PDF)
-exports.uploadPaper = async (req, res) => {
+// UPLOAD NOTE (PDF)
+exports.uploadNote = async (req, res) => {
   try {
-    const { title, description, subject, topic, year, paperType, tags } = req.body;
+    if (req.user.role.toLowerCase() === "student") {
+      return res.status(403).json({ message: "Students are not authorized to upload notes." });
+    }
+
+    const { title, description, subject, topic, year, noteType, tags } = req.body;
     
     if (!req.file) {
       return res.status(400).json({ message: "PDF file is required" });
     }
 
-    const paper = await Paper.create({
+    const note = await Note.create({
       title,
       description,
-      pdfUrl: `/uploads/papers/${req.file.filename}`,
+      pdfUrl: `/uploads/notes/${req.file.filename}`,
       subject,
       topic,
       year,
-      paperType,
+      noteType,
       tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())) : [],
       uploadedBy: req.user.id,
     });
 
-    const populatedPaper = await Paper.findById(paper._id).populate('uploadedBy', 'name role');
+    const populatedNote = await Note.findById(note._id).populate('uploadedBy', 'name role');
     
-    res.status(201).json(populatedPaper);
+    res.status(201).json(populatedNote);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// GET PAPERS WITH FILTERING
-exports.getPapers = async (req, res) => {
+// GET NOTES WITH FILTERING
+exports.getNotes = async (req, res) => {
   try {
-    const { subject, topic, paperType, year, search, tags } = req.query;
+    const { subject, topic, noteType, year, search, tags } = req.query;
     
     // Build filter object
     const filter = {};
     
     if (subject) filter.subject = subject;
     if (topic) filter.topic = topic;
-    if (paperType) filter.paperType = paperType;
+    if (noteType) filter.noteType = noteType;
     if (year) filter.year = year;
     if (tags) {
       const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());
@@ -53,59 +57,59 @@ exports.getPapers = async (req, res) => {
       filter.$text = { $search: search };
     }
     
-    const papers = await Paper.find(filter)
+    const notes = await Note.find(filter)
       .populate('uploadedBy', 'name role')
       .sort({ createdAt: -1 });
     
-    res.json(papers);
+    res.json(notes);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// GET SINGLE PAPER
-exports.getPaper = async (req, res) => {
+// GET SINGLE NOTE
+exports.getNote = async (req, res) => {
   try {
-    const paper = await Paper.findById(req.params.id)
+    const note = await Note.findById(req.params.id)
       .populate('uploadedBy', 'name role');
     
-    if (!paper) {
-      return res.status(404).json({ message: "Paper not found" });
+    if (!note) {
+      return res.status(404).json({ message: "Note not found" });
     }
     
     // Increment download count
-    paper.downloads += 1;
-    await paper.save();
+    note.downloads += 1;
+    await note.save();
     
-    res.json(paper);
+    res.json(note);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// DELETE PAPER
-exports.deletePaper = async (req, res) => {
+// DELETE NOTE
+exports.deleteNote = async (req, res) => {
   try {
-    const paper = await Paper.findById(req.params.id);
+    const note = await Note.findById(req.params.id);
     
-    if (!paper) {
-      return res.status(404).json({ message: "Paper not found" });
+    if (!note) {
+      return res.status(404).json({ message: "Note not found" });
     }
     
     // Check if user is the uploader
-    if (paper.uploadedBy.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized to delete this paper" });
+    if (note.uploadedBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized to delete this note" });
     }
     
     // Delete PDF file
-    const pdfPath = path.join(__dirname, '..', paper.pdfUrl);
+    const pdfPath = path.join(__dirname, '..', note.pdfUrl);
     if (fs.existsSync(pdfPath)) {
       fs.unlinkSync(pdfPath);
     }
     
-    await Paper.findByIdAndDelete(req.params.id);
+    await Note.findByIdAndDelete(req.params.id);
     
-    res.json({ message: "Paper deleted successfully" });
+    res.json({ message: "Note deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -115,15 +119,15 @@ exports.deletePaper = async (req, res) => {
 exports.getFilterOptions = async (req, res) => {
   try {
     const subjects = ["Math", "Physics", "Chemistry", "Biology", "Computer", "English", "Urdu", "Pak Studies", "Islamiat"];
-    const paperTypes = ["Past Paper", "Key Book", "Notes"];
+    const noteTypes = ["Past Note", "Key Book", "Notes"];
     
     // Get available years
-    const years = await Paper.distinct('year');
-    const chapters = await Paper.distinct('chapter');
+    const years = await Note.distinct('year');
+    const chapters = await Note.distinct('chapter');
     
     res.json({
       subjects,
-      paperTypes,
+      noteTypes,
       years: years.sort(),
       chapters: chapters.sort()
     });

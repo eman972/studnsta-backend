@@ -19,7 +19,7 @@ async function test() {
   form.append('title', 'Test Title');
   
   try {
-    const res = await fetch('http://localhost:5000/api/papers', {
+    const res = await fetch('http://localhost:5000/api/notes', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`

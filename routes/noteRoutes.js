@@ -6,13 +6,13 @@ const path = require("path");
 const fs = require("fs");
 
 // Import controllers directly
-const paperController = require("../controllers/paperController");
+const noteController = require("../controllers/noteController");
 
 // Configure multer for PDF uploads
 const pdfUpload = multer({
   storage: multer.diskStorage({
     destination: function (req, file, cb) {
-      const dir = "uploads/papers";
+      const dir = "uploads/notes";
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
@@ -35,11 +35,11 @@ const pdfUpload = multer({
   },
 });
 
-// Paper routes
-router.post("/", protect, pdfUpload.single("pdf"), paperController.uploadPaper);
-router.get("/", paperController.getPapers);
-router.get("/filters", paperController.getFilterOptions);
-router.get("/:id", paperController.getPaper);
-router.delete("/:id", protect, paperController.deletePaper);
+// Note routes
+router.post("/", protect, pdfUpload.single("pdf"), noteController.uploadNote);
+router.get("/", noteController.getNotes);
+router.get("/filters", noteController.getFilterOptions);
+router.get("/:id", noteController.getNote);
+router.delete("/:id", protect, noteController.deleteNote);
 
 module.exports = router;

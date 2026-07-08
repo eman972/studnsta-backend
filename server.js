@@ -15,8 +15,8 @@ const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 const imagesDir = path.join(uploadsDir, "images");
 if (!fs.existsSync(imagesDir)) fs.mkdirSync(imagesDir);
-const papersDir = path.join(uploadsDir, "papers");
-if (!fs.existsSync(papersDir)) fs.mkdirSync(papersDir);
+const notesDir = path.join(uploadsDir, "notes");
+if (!fs.existsSync(notesDir)) fs.mkdirSync(notesDir);
 
 app.use(cors({
   origin: "*",
@@ -35,8 +35,8 @@ app.use("/api/auth", authRoutes);
 const postRoutes = require("./routes/postRoutes");
 app.use("/api/posts", postRoutes);
 
-const paperRoutes = require("./routes/paperRoutes");
-app.use("/api/papers", paperRoutes);
+const noteRoutes = require("./routes/noteRoutes");
+app.use("/api/notes", noteRoutes);
 
 const profileRoutes = require("./routes/profileRoutes");
 app.use("/api/profile", profileRoutes);
