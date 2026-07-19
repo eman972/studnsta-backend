@@ -12,16 +12,27 @@ const {
 const { createQuiz: createQuizFromIds, generateQuizLink } = require("../controllers/quizCreationController");
 const protect = require("../middleware/authMiddleware");
 
-// Public quiz routes (for students to view available quizzes)
-router.get("/", getAllQuizzes);
-router.get("/my-quizzes", protect, getMyQuizzes); // Teachers only
-router.get("/:id", getQuizById);
+/**
+ * ==========================================
+ * LIVE QUIZ CREATION ROUTES (/api/quizzes)
+ * ==========================================
+ * These routes are used by TEACHERS to create and manage custom Live Quizzes.
+ */
 
-// Teacher-only routes
-router.post("/", protect, createNewQuiz); // Create quiz
-router.put("/:id", protect, updateQuiz); // Update quiz
-router.delete("/:id", protect, deleteQuiz); // Delete quiz
-router.patch("/:id/publish", protect, toggleQuizPublish); // Publish/Unpublish quiz
-router.post("/:id/generate-link", protect, generateQuizLink); // Generate unique quiz link
+// ==========================================
+// PUBLIC / STUDENT ROUTES
+// ==========================================
+router.get("/", getAllQuizzes); // List all available published quizzes
+router.get("/:id", getQuizById); // Get details of a specific quiz
+
+// ==========================================
+// TEACHER-ONLY ROUTES (Requires Auth)
+// ==========================================
+router.get("/my-quizzes", protect, getMyQuizzes); // See a list of quizzes I have created
+router.post("/", protect, createNewQuiz); // Create a brand new quiz
+router.put("/:id", protect, updateQuiz); // Update settings (duration, questions) of a quiz
+router.delete("/:id", protect, deleteQuiz); // Delete a quiz entirely
+router.patch("/:id/publish", protect, toggleQuizPublish); // Toggle whether students can see this quiz
+router.post("/:id/generate-link", protect, generateQuizLink); // Creates the unique /live/:link URL for students to join
 
 module.exports = router;

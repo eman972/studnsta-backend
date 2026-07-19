@@ -1,11 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/authMiddleware");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 
-// Import all controller functions
+// Import all controller functions that contain the actual logic
 const {
   createPost,
   getFeed,
@@ -15,41 +12,30 @@ const {
   getSavedPosts
 } = require("../controllers/postController");
 
-// Configure multer for image uploads
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      const dir = "uploads";
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      cb(null, dir);
-    },
-    filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
-      cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
-    },
-  }),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed"), false);
-    }
-  },
-});
 
-// GET SAVED POSTS route (Must be before /:id routes)
+
+/**
+ * ==========================================
+ * POST / COMMUNITY FEED ROUTES (/api/posts)
+ * ==========================================
+ * All routes here are 'protected', meaning you must be logged in to view 
+ * the feed or interact with posts.
+ */
+
+// GET /api/posts/saved -> Gets all posts the logged-in user bookmarked
+// Note: Must be placed *before* /:id routes so Express doesn't think "saved" is an ID
 router.get("/saved", protect, getSavedPosts);
 
-// POST routes
-router.post("/", protect, upload.single("image"), createPost);
+// POST /api/posts -> Create a new post
+router.post("/", protect, createPost);
+
+// GET /api/posts/feed -> Gets the global feed of all posts
 router.get("/feed", protect, getFeed);
 
-// Interaction routes
+// ==========================================
+// INTERACTION ROUTES
+// ==========================================
+// These handle clicking the Like, Save, or Comment buttons on a specific post ID
 router.post("/:id/like", protect, likePost);
 router.post("/:id/comment", protect, commentOnPost);
 router.post("/:id/save", protect, savePost);

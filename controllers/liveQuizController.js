@@ -136,7 +136,7 @@ exports.getLiveQuizById = async (req, res) => {
 // SUBMIT LIVE QUIZ RESULTS
 exports.submitLiveQuizResults = async (req, res) => {
   try {
-    const { quizId } = req.params;
+    const quizId = req.params.id;
     const { answers, timeTaken } = req.body;
 
     if (!answers || !Array.isArray(answers) || answers.length === 0) {
@@ -149,18 +149,17 @@ exports.submitLiveQuizResults = async (req, res) => {
     // Get the quiz to validate and get correct answers
     const quiz = await Quiz.findById(quizId).populate("questions");
     if (!quiz) {
-      return res.status(404).json({ message: "Quiz not found" });
+      return res.status(404).json({ message: `Quiz not found for ID: ${quizId}` });
     }
 
     if (!quiz.isLive) {
       return res.status(400).json({ message: "This is not a live quiz" });
     }
 
-    // Check if student already attempted this quiz
+    // Check if student already attempted this specific live quiz
     const existingAttempt = await QuizResult.findOne({
       studentId,
-      subject: quiz.subject,
-      topic: quiz.topic,
+      tags: quizId.toString(),
       status: "completed"
     });
 

@@ -8,7 +8,6 @@ exports.createPost = async (req, res) => {
     
     const post = await Post.create({
       content,
-      image: req.file ? `/uploads/${req.file.filename}` : null,
       subject,
       topic,
       tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())) : [],

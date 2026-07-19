@@ -14,20 +14,34 @@ const {
 } = require("../controllers/quizResultController");
 const protect = require("../middleware/authMiddleware");
 
-// Public routes (for students to view their results)
-router.get("/", getAllQuizResults); // With filters (admin/teacher access)
-router.get("/my-results", protect, getMyQuizResults); // Current user's results
-router.get("/top-scores", getTopScores); // Leaderboard
-router.get("/performance-overview", protect, getUserPerformanceOverview); // Current user's performance
-router.get("/:id", protect, getQuizResultById); // Specific result details
+/**
+ * ==========================================
+ * QUIZ RESULT ROUTES (/api/quiz-results)
+ * ==========================================
+ * These routes handle fetching and managing finalized quiz scores.
+ * These power the charts and metrics on the Progress Dashboard.
+ */
 
-// Student-specific routes
-router.get("/student/:studentId", protect, getStudentQuizResults); // Student's results (with access control)
-router.get("/student/:studentId/subject/:subject/stats", protect, getStudentSubjectStats); // Student's subject statistics
+// ==========================================
+// PUBLIC & DASHBOARD ROUTES
+// ==========================================
+router.get("/", getAllQuizResults); // Admin/teacher can view all
+router.get("/my-results", protect, getMyQuizResults); // Fetch logged-in user's history
+router.get("/top-scores", getTopScores); // Power a leaderboard component
+router.get("/performance-overview", protect, getUserPerformanceOverview); // Gets high-level summary (total quizzes taken, avg score)
+router.get("/:id", protect, getQuizResultById); // Get deep details (which questions they got wrong) on a specific result
 
-// Quiz result management routes
-router.post("/", createQuizResult); // Create quiz result
-router.put("/:id", updateQuizResult); // Update quiz result
-router.delete("/:id", deleteQuizResult); // Delete quiz result
+// ==========================================
+// STUDENT-SPECIFIC ANALYTICS ROUTES
+// ==========================================
+router.get("/student/:studentId", protect, getStudentQuizResults); // Used by teachers to see a specific student's history
+router.get("/student/:studentId/subject/:subject/stats", protect, getStudentSubjectStats); // Data for the subject-specific chart
+
+// ==========================================
+// MANAGEMENT ROUTES (Internal/System use)
+// ==========================================
+router.post("/", createQuizResult); 
+router.put("/:id", updateQuizResult); 
+router.delete("/:id", deleteQuizResult); 
 
 module.exports = router;

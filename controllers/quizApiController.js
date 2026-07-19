@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Question = require("../models/Question");
 const QuizResult = require("../models/QuizResult");
+const User = require("../models/User");
 
 // GET UNIQUE SUBJECTS
 exports.getSubjects = async (req, res) => {
@@ -73,7 +74,7 @@ exports.getQuestions = async (req, res) => {
           topic: 1,
           difficulty: 1,
           tags: 1,
-          // Note: NOT sending correctAnswer to frontend
+          correctAnswer: 1,
         }
       }
     ]);
@@ -155,6 +156,36 @@ exports.saveQuizResult = async (req, res) => {
     // Populate user details for response
     const populatedResult = await QuizResult.findById(quizResult._id)
       .populate("studentId", "name email");
+      
+    // Update Daily Streak
+    const user = await User.findById(userId);
+    if (user) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (user.lastQuizDate) {
+        const lastQuiz = new Date(user.lastQuizDate);
+        lastQuiz.setHours(0, 0, 0, 0);
+        
+        const diffTime = Math.abs(today - lastQuiz);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) {
+          // Increment streak if taken on consecutive days
+          user.dailyStreak += 1;
+        } else if (diffDays > 1) {
+          // Reset streak if missed a day
+          user.dailyStreak = 1;
+        }
+        // If diffDays === 0, they already took a quiz today, do nothing to the streak
+      } else {
+        // First quiz ever
+        user.dailyStreak = 1;
+      }
+      
+      user.lastQuizDate = new Date();
+      await user.save();
+    }
     
     res.status(201).json({
       success: true,
@@ -330,5 +361,51 @@ exports.getQuizStatistics = async (req, res) => {
       message: "Error fetching quiz statistics",
       error: error.message
     });
+  }
+};
+
+// GET GLOBAL LEADERBOARD
+exports.getLeaderboard = async (req, res) => {
+  try {
+    const leaderboard = await QuizResult.aggregate([
+      {
+        $match: {
+          quizType: "practice" // Only include practice quizzes, ignore live quizzes
+        }
+      },
+      {
+        $group: {
+          _id: "$studentId",
+          totalQuizzes: { $sum: 1 },
+          averageScore: { $avg: "$score" }
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "student"
+        }
+      },
+      { $unwind: "$student" },
+      {
+        $project: {
+          name: "$student.name",
+          avatar: "$student.avatar",
+          role: "$student.role",
+          totalQuizzes: 1,
+          averageScore: { $round: ["$averageScore", 1] }
+        }
+      },
+      // Filter out teachers from the leaderboard if desired, or let them stay
+      { $match: { role: "student" } },
+      { $sort: { averageScore: -1, totalQuizzes: -1 } },
+      { $limit: 10 }
+    ]);
+    
+    res.json({ success: true, leaderboard });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
