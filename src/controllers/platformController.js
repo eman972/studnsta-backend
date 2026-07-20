@@ -221,13 +221,13 @@ exports.auditLogs = async (req, res) => {
 // ---- Mastery map ----
 exports.masteryMap = async (req, res) => {
   const results = await QuizResult.find({
-    student: req.user.id,
+    studentId: req.user.id,
   }).sort({ completedAt: -1 });
   const map = {};
   results.forEach((r) => {
     const key = `${r.subject || "General"}::${r.topic || "General"}`;
     if (!map[key]) map[key] = { scores: [], subject: r.subject, topic: r.topic };
-    map[key].scores.push(r.score);
+    map[key].scores.push(r.score ?? 0);
   });
   const mastery = Object.values(map).map((m) => {
     const avg = Math.round(m.scores.reduce((a, b) => a + b, 0) / m.scores.length);
@@ -243,7 +243,7 @@ exports.masteryMap = async (req, res) => {
 };
 
 exports.weeklyStudyPlan = async (req, res) => {
-  const results = await QuizResult.find({ student: req.user.id }).limit(50);
+  const results = await QuizResult.find({ studentId: req.user.id }).limit(50);
   const weak = {};
   results.forEach((r) => {
     if ((r.score || 0) < 70) {
@@ -324,7 +324,7 @@ exports.addToCollection = async (req, res) => {
 /** Feature 73: badges / certificates */
 exports.myBadges = async (req, res) => {
   const user = await User.findById(req.user.id);
-  const results = await QuizResult.find({ student: req.user.id });
+  const results = await QuizResult.find({ studentId: req.user.id });
   const badges = new Set(user.badges || []);
   if (results.length >= 1) badges.add("first-quiz");
   if (results.length >= 10) badges.add("quiz-warrior");
@@ -336,7 +336,7 @@ exports.myBadges = async (req, res) => {
 };
 
 exports.transcript = async (req, res) => {
-  const results = await QuizResult.find({ student: req.user.id }).sort({
+  const results = await QuizResult.find({ studentId: req.user.id }).sort({
     completedAt: -1,
   });
   const user = await User.findById(req.user.id).select("name email role institution");

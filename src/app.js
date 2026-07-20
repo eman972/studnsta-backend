@@ -4,7 +4,26 @@ const fs = require("fs");
 const path = require("path");
 const requestContext = require("./middleware/requestContext");
 const { apiLimiter } = require("./middleware/rateLimiters");
+const errorHandler = require("./middleware/errorHandler");
+const asyncHandler = require("./middleware/asyncHandler");
 const { UPLOADS } = require("./config/paths");
+
+function wrapRouter(router) {
+  if (!router || !router.stack) return router;
+  router.stack.forEach((layer) => {
+    if (layer.route) {
+      layer.route.stack.forEach((handlerLayer) => {
+        if (
+          typeof handlerLayer.handle === "function" &&
+          handlerLayer.handle.length < 4
+        ) {
+          handlerLayer.handle = asyncHandler(handlerLayer.handle);
+        }
+      });
+    }
+  });
+  return router;
+}
 
 function createApp() {
   const app = express();
@@ -46,18 +65,22 @@ function createApp() {
   app.use(apiLimiter);
   app.use("/uploads", express.static(UPLOADS));
 
-  app.use("/api/auth", require("./routes/authRoutes"));
-  app.use("/api/posts", require("./routes/postRoutes"));
-  app.use("/api/notes", require("./routes/noteRoutes"));
-  app.use("/api/profile", require("./routes/profileRoutes"));
-  app.use("/api/quizzes", require("./routes/quizRoutes"));
-  app.use("/api/quiz-attempts", require("./routes/quizAttemptRoutes"));
-  app.use("/api/questions", require("./routes/questionRoutes"));
-  app.use("/api/quiz-results", require("./routes/quizResultRoutes"));
-  app.use("/api/quiz", require("./routes/quizApiRoutes"));
-  app.use("/api/live-quiz", require("./routes/liveQuizRoutes"));
-  app.use("/api/ai", require("./routes/aiRoutes"));
-  app.use("/api", require("./routes/platformRoutes"));
+  const mount = (pathPrefix, routerPath) => {
+    app.use(pathPrefix, wrapRouter(require(routerPath)));
+  };
+
+  mount("/api/auth", "./routes/authRoutes");
+  mount("/api/posts", "./routes/postRoutes");
+  mount("/api/notes", "./routes/noteRoutes");
+  mount("/api/profile", "./routes/profileRoutes");
+  mount("/api/quizzes", "./routes/quizRoutes");
+  mount("/api/quiz-attempts", "./routes/quizAttemptRoutes");
+  mount("/api/questions", "./routes/questionRoutes");
+  mount("/api/quiz-results", "./routes/quizResultRoutes");
+  mount("/api/quiz", "./routes/quizApiRoutes");
+  mount("/api/live-quiz", "./routes/liveQuizRoutes");
+  mount("/api/ai", "./routes/aiRoutes");
+  mount("/api", "./routes/platformRoutes");
 
   app.get("/health", (req, res) => {
     res.json({
@@ -96,6 +119,8 @@ function createApp() {
       ],
     });
   });
+
+  app.use(errorHandler);
 
   return { app, allowedOrigins };
 }

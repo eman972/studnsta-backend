@@ -6,6 +6,10 @@ const { calcProfileCompleteness, publicUser } = require("../utils/tokens");
 exports.getUserProfile = async (req, res) => {
   try {
     const targetUserId = req.query.userId || req.user.id;
+    const { isValidObjectId } = require("../utils/ids");
+    if (!isValidObjectId(targetUserId)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
     const isOwner = targetUserId.toString() === req.user.id.toString();
 
     const user = await User.findById(targetUserId);
@@ -139,17 +143,23 @@ exports.deleteUserPost = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
-    const filter = { isDeleted: { $ne: true }, isDeactivated: { $ne: true } };
+    const filter = {
+      isDeleted: { $ne: true },
+      isDeactivated: { $ne: true },
+      _id: { $ne: req.user.id },
+    };
     if (q) {
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filter.$or = [
-        { name: { $regex: q, $options: "i" } },
-        { email: { $regex: q, $options: "i" } },
-        { institution: { $regex: q, $options: "i" } },
+        { name: { $regex: escaped, $options: "i" } },
+        { email: { $regex: escaped, $options: "i" } },
+        { institution: { $regex: escaped, $options: "i" } },
       ];
     }
     const users = await User.find(filter)
       .select("name email role avatar institution campus bio tagline")
-      .limit(50);
+      .limit(50)
+      .lean();
     res.json({ users });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -160,6 +170,10 @@ exports.getAllUsers = async (req, res) => {
 exports.followUser = async (req, res) => {
   try {
     const targetId = req.params.userId;
+    const { isValidObjectId } = require("../utils/ids");
+    if (!isValidObjectId(targetId)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
     if (targetId === req.user.id.toString()) {
       return res.status(400).json({ message: "Cannot follow yourself" });
     }
@@ -188,6 +202,10 @@ exports.followUser = async (req, res) => {
 exports.unfollowUser = async (req, res) => {
   try {
     const targetId = req.params.userId;
+    const { isValidObjectId } = require("../utils/ids");
+    if (!isValidObjectId(targetId)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
     const me = await User.findById(req.user.id);
     const target = await User.findById(targetId);
     if (!target) return res.status(404).json({ message: "User not found" });

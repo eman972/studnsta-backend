@@ -40,19 +40,31 @@ exports.joinClass = async (req, res) => {
 };
 
 exports.myClasses = async (req, res) => {
-  const classes = await Class.find({
-    $or: [{ teacher: req.user.id }, { members: req.user.id }],
-    isArchived: false,
-  }).populate("teacher", "name avatar");
-  res.json({ classes });
+  try {
+    const classes = await Class.find({
+      $or: [{ teacher: req.user.id }, { members: req.user.id }],
+      isArchived: false,
+    }).populate("teacher", "name avatar");
+    res.json({ classes });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.getClass = async (req, res) => {
-  const klass = await Class.findById(req.params.id)
-    .populate("teacher", "name avatar")
-    .populate("members", "name avatar role");
-  if (!klass) return res.status(404).json({ message: "Not found" });
-  res.json({ class: klass });
+  try {
+    const { isValidObjectId } = require("../utils/ids");
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid class id" });
+    }
+    const klass = await Class.findById(req.params.id)
+      .populate("teacher", "name avatar")
+      .populate("members", "name avatar role");
+    if (!klass) return res.status(404).json({ message: "Not found" });
+    res.json({ class: klass });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.announce = async (req, res) => {
