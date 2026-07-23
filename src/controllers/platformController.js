@@ -140,21 +140,7 @@ exports.createReport = async (req, res) => {
   res.status(201).json({ report });
 };
 
-exports.listReports = async (req, res) => {
-  const reports = await Report.find({ status: { $in: ["open", "reviewing"] } })
-    .populate("reporter", "name")
-    .sort({ createdAt: -1 });
-  res.json({ reports });
-};
-
-exports.resolveReport = async (req, res) => {
-  const report = await Report.findByIdAndUpdate(
-    req.params.id,
-    { status: req.body.status || "resolved", resolvedBy: req.user.id },
-    { new: true }
-  );
-  res.json({ report });
-};
+// (Removed listReports and resolveReport)
 
 // ---- Feature flags ----
 exports.listFlags = async (req, res) => {
@@ -176,47 +162,7 @@ exports.getFlag = async (req, res) => {
   res.json({ enabled: !!flag?.enabled, flag });
 };
 
-// ---- Admin analytics ----
-exports.adminAnalytics = async (req, res) => {
-  const [users, posts, notes, quizzes, openReports] = await Promise.all([
-    User.countDocuments({ isDeleted: { $ne: true } }),
-    Post.countDocuments(),
-    Note.countDocuments(),
-    QuizResult.countDocuments(),
-    Report.countDocuments({ status: "open" }),
-  ]);
-  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const weeklyActive = await User.countDocuments({ updatedAt: { $gte: since } });
-  res.json({
-    users,
-    posts,
-    notes,
-    quizCompletions: quizzes,
-    weeklyActive,
-    openReports,
-  });
-};
-
-exports.adminUsers = async (req, res) => {
-  const users = await User.find({ isDeleted: { $ne: true } })
-    .select("-password -refreshTokens")
-    .limit(100);
-  res.json({ users });
-};
-
-exports.verifyTeacher = async (req, res) => {
-  const user = await User.findByIdAndUpdate(
-    req.params.userId,
-    { teacherVerified: true, role: "teacher" },
-    { new: true }
-  ).select("-password");
-  res.json({ user });
-};
-
-exports.auditLogs = async (req, res) => {
-  const logs = await AuditLog.find().sort({ createdAt: -1 }).limit(100);
-  res.json({ logs });
-};
+// Admin controllers removed
 
 // ---- Mastery map ----
 exports.masteryMap = async (req, res) => {

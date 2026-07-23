@@ -4,7 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const protect = require("../middleware/authMiddleware");
-const { requireTeacher, requireAdmin } = require("../middleware/rbac");
+const { requireTeacher } = require("../middleware/rbac");
 const audit = require("../middleware/audit");
 const classCtrl = require("../controllers/classController");
 const notifCtrl = require("../controllers/notificationController");
@@ -85,8 +85,7 @@ router.post("/mentorship/:id/respond", protect, platform.respondMentorship);
 
 // Reports / moderation
 router.post("/reports", protect, platform.createReport);
-router.get("/reports", protect, requireAdmin, platform.listReports);
-router.post("/reports/:id/resolve", protect, requireAdmin, platform.resolveReport);
+
 
 // Search, mastery, plan, presence
 router.get("/search", protect, platform.search);
@@ -108,12 +107,6 @@ router.post("/attendance/check-in", protect, platform.checkIn);
 // Feature flags
 router.get("/flags", protect, platform.listFlags);
 router.get("/flags/:key", protect, platform.getFlag);
-router.post("/flags", protect, requireAdmin, platform.upsertFlag);
-
-// Admin
-router.get("/admin/analytics", protect, requireAdmin, platform.adminAnalytics);
-router.get("/admin/users", protect, requireAdmin, platform.adminUsers);
-router.post("/admin/verify-teacher/:userId", protect, requireAdmin, platform.verifyTeacher);
-router.get("/admin/audit-logs", protect, requireAdmin, platform.auditLogs);
+// Admin routes removed
 
 module.exports = router;

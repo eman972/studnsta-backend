@@ -111,7 +111,7 @@ exports.updateQuestion = async (req, res) => {
       return res.status(404).json({ message: "Question not found" });
     }
 
-    // Check if user is the creator or admin
+    // Check if user is the creator or teacher
     if (question.createdBy.toString() !== req.user._id.toString() && req.user.role !== "teacher") {
       return res.status(403).json({ message: "Only question creators can update their questions" });
     }
@@ -167,7 +167,7 @@ exports.deleteQuestion = async (req, res) => {
       return res.status(404).json({ message: "Question not found" });
     }
 
-    // Check if user is the creator or admin
+    // Check if user is the creator or teacher
     if (question.createdBy.toString() !== req.user._id.toString() && req.user.role !== "teacher") {
       return res.status(403).json({ message: "Only question creators can delete their questions" });
     }

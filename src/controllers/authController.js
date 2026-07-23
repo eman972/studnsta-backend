@@ -46,9 +46,7 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    let finalRole = ["student", "teacher", "admin"].includes(role) ? role : "student";
-    // Never allow self-register as admin
-    if (finalRole === "admin") finalRole = "student";
+    let finalRole = ["student", "teacher"].includes(role) ? role : "student";
 
     let teacherVerified = false;
     if (finalRole === "teacher") {

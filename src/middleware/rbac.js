@@ -15,13 +15,11 @@ const authorize = (...roles) => {
   };
 };
 
-const requireTeacher = authorize("teacher", "admin");
-const requireAdmin = authorize("admin");
-const requireStudentOrTeacher = authorize("student", "teacher", "admin");
+const requireTeacher = authorize("teacher");
+const requireStudentOrTeacher = authorize("student", "teacher");
 
 module.exports = {
   authorize,
   requireTeacher,
-  requireAdmin,
   requireStudentOrTeacher,
 };

@@ -52,7 +52,7 @@ const tryGroqCompletion = async (messages, systemPrompt, modelIndex = 0) => {
 
 async function checkQuota(user) {
   const limit =
-    user.role === "teacher" ? 200 : user.role === "admin" ? 500 : 50;
+    user.role === "teacher" ? 200 : 50;
   const now = new Date();
   if (!user.aiQuotaResetAt || user.aiQuotaResetAt < now) {
     user.aiQuotaUsed = 0;
@@ -257,7 +257,7 @@ exports.teacherAssist = async (req, res) => {
   try {
     const { task, context } = req.body;
     const user = await User.findById(req.user.id);
-    if (!["teacher", "admin"].includes(user.role)) {
+    if (user.role !== "teacher") {
       return res.status(403).json({ message: "Teachers only" });
     }
     const quota = await checkQuota(user);

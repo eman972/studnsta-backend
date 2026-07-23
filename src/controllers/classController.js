@@ -70,7 +70,7 @@ exports.getClass = async (req, res) => {
 exports.announce = async (req, res) => {
   const klass = await Class.findById(req.params.id);
   if (!klass) return res.status(404).json({ message: "Not found" });
-  if (klass.teacher.toString() !== req.user.id.toString() && req.user.role !== "admin") {
+  if (klass.teacher.toString() !== req.user.id.toString()) {
     return res.status(403).json({ message: "Teachers only" });
   }
   klass.announcements.unshift({

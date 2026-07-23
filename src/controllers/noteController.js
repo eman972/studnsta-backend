@@ -96,8 +96,7 @@ exports.deleteNote = async (req, res) => {
     }
     
     if (
-      note.uploadedBy.toString() !== req.user.id &&
-      req.user.role !== "admin"
+      note.uploadedBy.toString() !== req.user.id
     ) {
       return res.status(403).json({ message: "Not authorized to delete this note" });
     }

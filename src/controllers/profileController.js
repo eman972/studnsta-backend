@@ -19,8 +19,7 @@ exports.getUserProfile = async (req, res) => {
 
     if (
       !isOwner &&
-      user.privacy === "private" &&
-      req.user.role !== "admin"
+      user.privacy === "private"
     ) {
       return res.status(403).json({ message: "Profile is private" });
     }
@@ -122,8 +121,7 @@ exports.deleteUserPost = async (req, res) => {
     const post = await Post.findById(req.params.postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
     if (
-      post.author.toString() !== req.user.id.toString() &&
-      req.user.role !== "admin"
+      post.author.toString() !== req.user.id.toString()
     ) {
       return res.status(403).json({ message: "Not allowed" });
     }
