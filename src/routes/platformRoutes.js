@@ -56,14 +56,14 @@ router.post("/assignments", protect, requireTeacher, audit("assignment.create"),
 router.get("/assignments", protect, assignCtrl.list);
 router.post("/assignments/:id/submit", protect, upload.single("file"), assignCtrl.submit);
 router.post("/assignments/:id/grade", protect, requireTeacher, assignCtrl.grade);
-router.post("/assignments/:id/peer-review", protect, assignCtrl.peerReview);
+
 
 // Flashcards
 router.post("/flashcards", protect, flashCtrl.create);
 router.get("/flashcards", protect, flashCtrl.list);
 router.get("/flashcards/due", protect, flashCtrl.due);
 router.post("/flashcards/:id/review", protect, flashCtrl.review);
-router.post("/flashcards/from-note", protect, flashCtrl.fromNote);
+
 
 // Study groups, events, clubs, mentorship
 router.post("/study-groups", protect, platform.createStudyGroup);
@@ -79,12 +79,7 @@ router.post("/clubs", protect, platform.createClub);
 router.get("/clubs", protect, platform.listClubs);
 router.post("/clubs/:id/join", protect, platform.joinClub);
 
-router.post("/mentorship", protect, platform.requestMentorship);
-router.get("/mentorship", protect, platform.listMentorships);
-router.post("/mentorship/:id/respond", protect, platform.respondMentorship);
 
-// Reports / moderation
-router.post("/reports", protect, platform.createReport);
 
 
 // Search, mastery, plan, presence
@@ -94,19 +89,7 @@ router.get("/study-plan", protect, platform.weeklyStudyPlan);
 router.post("/presence/heartbeat", protect, platform.heartbeat);
 router.get("/presence/online", protect, platform.online);
 
-router.post("/collections", protect, platform.createCollection);
-router.get("/collections", protect, platform.listCollections);
-router.post("/collections/:id/notes", protect, platform.addToCollection);
-router.get("/badges", protect, platform.myBadges);
-router.get("/transcript", protect, platform.transcript);
-router.post("/questions/suggest", protect, platform.suggestQuestion);
-router.post("/questions/:id/approve", protect, requireTeacher, platform.approveQuestion);
-router.post("/push/subscribe", protect, platform.savePushSubscription);
-router.post("/attendance/check-in", protect, platform.checkIn);
 
-// Feature flags
-router.get("/flags", protect, platform.listFlags);
-router.get("/flags/:key", protect, platform.getFlag);
 // Admin routes removed
 
 module.exports = router;

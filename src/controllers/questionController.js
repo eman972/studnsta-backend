@@ -116,7 +116,7 @@ exports.updateQuestion = async (req, res) => {
       return res.status(403).json({ message: "Only question creators can update their questions" });
     }
 
-    const { subject, topic, question: questionText, options, correctAnswer, difficulty, explanation, tags, isVerified } = req.body;
+    const { subject, topic, question: questionText, options, correctAnswer, difficulty, explanation, tags } = req.body;
 
     // Validate options if provided
     if (options && options.length !== 4) {
@@ -137,7 +137,6 @@ exports.updateQuestion = async (req, res) => {
       difficulty,
       explanation,
       tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())) : [],
-      isVerified,
     };
 
     // Remove undefined fields

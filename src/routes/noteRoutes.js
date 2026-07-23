@@ -29,9 +29,7 @@ const pdfUpload = multer({
 router.post("/", protect, pdfUpload.single("pdf"), noteController.uploadNote);
 router.get("/", noteController.getNotes);
 router.get("/filters", noteController.getFilterOptions);
-router.post("/:id/rate", protect, noteController.rateNote);
-router.post("/:id/version", protect, noteController.versionNote);
-router.post("/:id/annotate", protect, noteController.annotateNote);
+
 router.get("/:id", noteController.getNote);
 router.delete("/:id", protect, noteController.deleteNote);
 

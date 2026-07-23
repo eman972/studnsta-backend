@@ -69,19 +69,26 @@ exports.getNotes = async (req, res) => {
 // GET SINGLE NOTE
 exports.getNote = async (req, res) => {
   try {
+    console.log("getNote: updating downloads for", req.params.id);
+    await Note.updateOne(
+      { _id: req.params.id },
+      { $inc: { downloads: 1 } }
+    );
+    console.log("getNote: updated downloads");
+    
+    console.log("getNote: finding note by id");
     const note = await Note.findById(req.params.id)
       .populate('uploadedBy', 'name role');
+    console.log("getNote: found note", !!note);
     
     if (!note) {
       return res.status(404).json({ message: "Note not found" });
     }
     
-    // Increment download count
-    note.downloads += 1;
-    await note.save();
-    
+    console.log("getNote: sending json");
     res.json(note);
   } catch (error) {
+    console.error("getNote error:", error.stack);
     res.status(500).json({ message: error.message });
   }
 };
@@ -111,66 +118,7 @@ exports.deleteNote = async (req, res) => {
   }
 };
 
-/** Feature 54: rate note */
-exports.rateNote = async (req, res) => {
-  try {
-    const note = await Note.findById(req.params.id);
-    if (!note || note.isDeleted) return res.status(404).json({ message: "Not found" });
-    const { score, review } = req.body;
-    note.ratings = note.ratings.filter(
-      (r) => r.user.toString() !== req.user.id.toString()
-    );
-    note.ratings.push({ user: req.user.id, score, review });
-    note.avgRating =
-      note.ratings.reduce((s, r) => s + r.score, 0) / note.ratings.length;
-    await note.save();
-    res.json({ note });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
-/** Feature 53: version bump */
-exports.versionNote = async (req, res) => {
-  try {
-    const note = await Note.findById(req.params.id);
-    if (!note) return res.status(404).json({ message: "Not found" });
-    if (note.uploadedBy.toString() !== req.user.id.toString()) {
-      return res.status(403).json({ message: "Not allowed" });
-    }
-    note.version += 1;
-    note.changelog.push({
-      version: note.version,
-      note: req.body.note || `Version ${note.version}`,
-      by: req.user.id,
-    });
-    if (req.body.description) note.description = req.body.description;
-    if (req.body.citation) note.citation = req.body.citation;
-    if (req.body.sourceUrl) note.sourceUrl = req.body.sourceUrl;
-    await note.save();
-    res.json({ note });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-/** Feature 58: annotate */
-exports.annotateNote = async (req, res) => {
-  try {
-    const note = await Note.findById(req.params.id);
-    if (!note) return res.status(404).json({ message: "Not found" });
-    note.annotations.push({
-      user: req.user.id,
-      page: req.body.page,
-      text: req.body.text,
-      highlight: req.body.highlight,
-    });
-    await note.save();
-    res.json({ note });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
 // GET FILTER OPTIONS
 exports.getFilterOptions = async (req, res) => {

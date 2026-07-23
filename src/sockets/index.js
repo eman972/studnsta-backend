@@ -17,15 +17,7 @@ function registerSockets(io) {
       socket.join(`group:${groupId}`);
     });
 
-    socket.on("live-lobby-join", ({ quizId, user }) => {
-      socket.join(`live:${quizId}`);
-      const list = liveLobbies.get(quizId) || [];
-      if (!list.find((u) => u.id === user?.id)) {
-        list.push({ id: user?.id, name: user?.name, socketId: socket.id });
-        liveLobbies.set(quizId, list);
-      }
-      io.to(`live:${quizId}`).emit("live-lobby-update", liveLobbies.get(quizId));
-    });
+
 
     socket.on("live-countdown", ({ quizId, seconds }) => {
       io.to(`live:${quizId}`).emit("live-countdown", { seconds });
@@ -40,11 +32,7 @@ function registerSockets(io) {
     });
 
     socket.on("disconnect", () => {
-      for (const [quizId, list] of liveLobbies.entries()) {
-        const next = list.filter((u) => u.socketId !== socket.id);
-        liveLobbies.set(quizId, next);
-        io.to(`live:${quizId}`).emit("live-lobby-update", next);
-      }
+      // Clean up lobbies if needed in future
     });
   });
 }

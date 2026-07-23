@@ -1,15 +1,11 @@
 const StudyGroup = require("../models/StudyGroup");
 const Event = require("../models/Event");
 const Club = require("../models/Club");
-const Mentorship = require("../models/Mentorship");
-const Report = require("../models/Report");
-const FeatureFlag = require("../models/FeatureFlag");
 const AuditLog = require("../models/AuditLog");
 const User = require("../models/user");
 const QuizResult = require("../models/QuizResult");
 const Post = require("../models/Post");
 const Note = require("../models/Note");
-const NoteCollection = require("../models/NoteCollection");
 const AiChat = require("../models/AiChat");
 const Question = require("../models/Question");
 
@@ -107,60 +103,6 @@ exports.joinClub = async (req, res) => {
   res.json({ club });
 };
 
-// ---- Mentorship ----
-exports.requestMentorship = async (req, res) => {
-  const m = await Mentorship.create({
-    mentor: req.body.mentorId,
-    mentee: req.user.id,
-    subject: req.body.subject,
-  });
-  res.status(201).json({ mentorship: m });
-};
-
-exports.respondMentorship = async (req, res) => {
-  const m = await Mentorship.findById(req.params.id);
-  if (!m || m.mentor.toString() !== req.user.id.toString()) {
-    return res.status(403).json({ message: "Not allowed" });
-  }
-  m.status = req.body.status;
-  await m.save();
-  res.json({ mentorship: m });
-};
-
-exports.listMentorships = async (req, res) => {
-  const items = await Mentorship.find({
-    $or: [{ mentor: req.user.id }, { mentee: req.user.id }],
-  }).populate("mentor mentee", "name avatar");
-  res.json({ mentorships: items });
-};
-
-// ---- Reports / moderation ----
-exports.createReport = async (req, res) => {
-  const report = await Report.create({ ...req.body, reporter: req.user.id });
-  res.status(201).json({ report });
-};
-
-// (Removed listReports and resolveReport)
-
-// ---- Feature flags ----
-exports.listFlags = async (req, res) => {
-  const flags = await FeatureFlag.find();
-  res.json({ flags });
-};
-
-exports.upsertFlag = async (req, res) => {
-  const flag = await FeatureFlag.findOneAndUpdate(
-    { key: req.body.key },
-    req.body,
-    { upsert: true, new: true }
-  );
-  res.json({ flag });
-};
-
-exports.getFlag = async (req, res) => {
-  const flag = await FeatureFlag.findOne({ key: req.params.key });
-  res.json({ enabled: !!flag?.enabled, flag });
-};
 
 // Admin controllers removed
 
@@ -235,107 +177,6 @@ exports.online = async (req, res) => {
   res.json({ online });
 };
 
-/** Feature 55: note collections */
-exports.createCollection = async (req, res) => {
-  const col = await NoteCollection.create({
-    name: req.body.name,
-    description: req.body.description,
-    owner: req.user.id,
-    notes: req.body.notes || [],
-  });
-  res.status(201).json({ collection: col });
-};
-
-exports.listCollections = async (req, res) => {
-  const collections = await NoteCollection.find({ owner: req.user.id }).populate(
-    "notes",
-    "title subject topic"
-  );
-  res.json({ collections });
-};
-
-exports.addToCollection = async (req, res) => {
-  const col = await NoteCollection.findOne({
-    _id: req.params.id,
-    owner: req.user.id,
-  });
-  if (!col) return res.status(404).json({ message: "Not found" });
-  if (!col.notes.map(String).includes(req.body.noteId)) {
-    col.notes.push(req.body.noteId);
-    await col.save();
-  }
-  res.json({ collection: col });
-};
-
-/** Feature 73: badges / certificates */
-exports.myBadges = async (req, res) => {
-  const user = await User.findById(req.user.id);
-  const results = await QuizResult.find({ studentId: req.user.id });
-  const badges = new Set(user.badges || []);
-  if (results.length >= 1) badges.add("first-quiz");
-  if (results.length >= 10) badges.add("quiz-warrior");
-  if ((user.dailyStreak || 0) >= 7) badges.add("week-streak");
-  if (results.some((r) => (r.score || 0) >= 100)) badges.add("perfect-score");
-  user.badges = [...badges];
-  await user.save();
-  res.json({ badges: user.badges });
-};
-
-exports.transcript = async (req, res) => {
-  const results = await QuizResult.find({ studentId: req.user.id }).sort({
-    completedAt: -1,
-  });
-  const user = await User.findById(req.user.id).select("name email role institution");
-  res.json({
-    student: user,
-    generatedAt: new Date().toISOString(),
-    quizHistory: results,
-  });
-};
-
-/** Feature 75: question contribution */
-exports.suggestQuestion = async (req, res) => {
-  const q = await Question.create({
-    ...req.body,
-    createdBy: req.user.id,
-    status: "pending",
-    isVerified: false,
-  });
-  res.status(201).json({ question: q });
-};
-
-exports.approveQuestion = async (req, res) => {
-  const q = await Question.findByIdAndUpdate(
-    req.params.id,
-    { status: "approved", isVerified: true },
-    { new: true }
-  );
-  res.json({ question: q });
-};
-
-/** Feature 44: web push subscription stub */
-exports.savePushSubscription = async (req, res) => {
-  const user = await User.findById(req.user.id);
-  user.notificationPrefs = {
-    ...user.notificationPrefs?.toObject?.() || user.notificationPrefs || {},
-    push: true,
-    pushSubscription: req.body.subscription,
-  };
-  await user.save();
-  res.json({ message: "Push subscription saved" });
-};
-
-/** Feature 72: attendance */
-exports.checkIn = async (req, res) => {
-  const { eventId } = req.body;
-  const event = await Event.findById(eventId);
-  if (!event) return res.status(404).json({ message: "Event not found" });
-  if (!event.attendees.map(String).includes(req.user.id.toString())) {
-    event.attendees.push(req.user.id);
-    await event.save();
-  }
-  res.json({ event, checkedIn: true });
-};
 
 exports.saveAiChat = async (userId, messages, subject, title) => {
   return AiChat.create({ user: userId, messages, subject, title });

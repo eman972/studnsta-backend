@@ -19,7 +19,7 @@ exports.list = async (req, res) => {
 exports.submit = async (req, res) => {
   const assignment = await Assignment.findById(req.params.id);
   if (!assignment) return res.status(404).json({ message: "Not found" });
-  const fileUrl = req.file ? `/uploads/${req.file.filename}` : req.body.fileUrl;
+  const fileUrl = req.file ? `/uploads/files/${req.file.filename}` : req.body.fileUrl;
   const text = req.body.text || "";
 
   // Feature 76: simple similarity vs other submissions
@@ -66,18 +66,4 @@ exports.grade = async (req, res) => {
   res.json({ assignment });
 };
 
-exports.peerReview = async (req, res) => {
-  const assignment = await Assignment.findById(req.params.id);
-  if (!assignment?.allowPeerReview) {
-    return res.status(400).json({ message: "Peer review disabled" });
-  }
-  const sub = assignment.submissions.id(req.body.submissionId);
-  if (!sub) return res.status(404).json({ message: "Submission not found" });
-  sub.peerReviews.push({
-    reviewer: req.user.id,
-    score: req.body.score,
-    comment: req.body.comment,
-  });
-  await assignment.save();
-  res.json({ assignment });
-};
+

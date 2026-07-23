@@ -17,7 +17,11 @@ function applySm2(card, quality) {
     card.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
   );
   card.lastReviewedAt = new Date();
-  card.nextReviewAt = new Date(Date.now() + card.interval * 24 * 60 * 60 * 1000);
+  if (quality < 3) {
+    card.nextReviewAt = new Date(Date.now() + 60 * 1000); // 1 minute from now
+  } else {
+    card.nextReviewAt = new Date(Date.now() + card.interval * 24 * 60 * 60 * 1000);
+  }
   return card;
 }
 
@@ -50,20 +54,3 @@ exports.review = async (req, res) => {
   res.json({ card });
 };
 
-exports.fromNote = async (req, res) => {
-  const { noteId, cards } = req.body;
-  if (!Array.isArray(cards)) {
-    return res.status(400).json({ message: "cards array required" });
-  }
-  const created = await Flashcard.insertMany(
-    cards.map((c) => ({
-      user: req.user.id,
-      note: noteId,
-      front: c.front,
-      back: c.back,
-      subject: c.subject,
-      topic: c.topic,
-    }))
-  );
-  res.status(201).json({ cards: created });
-};

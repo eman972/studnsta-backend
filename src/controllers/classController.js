@@ -96,7 +96,7 @@ exports.announce = async (req, res) => {
 exports.addFile = async (req, res) => {
   const klass = await Class.findById(req.params.id);
   if (!klass) return res.status(404).json({ message: "Not found" });
-  const url = req.file ? `/uploads/${req.file.filename}` : req.body.url;
+  const url = req.file ? `/uploads/files/${req.file.filename}` : req.body.url;
   klass.files.push({
     name: req.body.name || req.file?.originalname || "file",
     url,

@@ -7,13 +7,7 @@ const assignmentSchema = new mongoose.Schema(
     classId: { type: mongoose.Schema.Types.ObjectId, ref: "Class" },
     teacher: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     dueDate: { type: Date },
-    rubric: [
-      {
-        criterion: String,
-        maxPoints: Number,
-      },
-    ],
-    allowPeerReview: { type: Boolean, default: false },
+
     submissions: [
       {
         student: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -21,15 +15,7 @@ const assignmentSchema = new mongoose.Schema(
         text: String,
         submittedAt: { type: Date, default: Date.now },
         grade: Number,
-        feedback: String,
-        peerReviews: [
-          {
-            reviewer: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-            score: Number,
-            comment: String,
-          },
-        ],
-        similarityScore: { type: Number, default: 0 },
+
       },
     ],
   },

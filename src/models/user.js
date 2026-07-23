@@ -17,12 +17,7 @@ const userSchema = new mongoose.Schema(
     dailyStreak: { type: Number, default: 0 },
     lastQuizDate: { type: Date, default: null },
 
-    // Phase 0–1 identity
-    emailVerified: { type: Boolean, default: false },
-    emailVerifyToken: { type: String, default: null },
-    emailVerifyExpires: { type: Date, default: null },
-    resetPasswordToken: { type: String, default: null },
-    resetPasswordExpires: { type: Date, default: null },
+
     refreshTokens: [
       {
         token: String,
@@ -41,14 +36,12 @@ const userSchema = new mongoose.Schema(
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     privacy: {
       type: String,
-      enum: ["public", "classmates", "private"],
+      enum: ["public", "followers", "private"],
       default: "public",
     },
     notificationPrefs: {
       inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: true },
       push: { type: Boolean, default: false },
-      digests: { type: Boolean, default: true },
       pushSubscription: { type: mongoose.Schema.Types.Mixed, default: null },
     },
     onboardingComplete: { type: Boolean, default: false },

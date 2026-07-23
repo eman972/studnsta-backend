@@ -23,12 +23,6 @@ const postSchema = new mongoose.Schema(
     image: { type: String, default: "" },
     attachments: [{ name: String, url: String }],
     mentions: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    hashtags: [{ type: String }],
-    poll: {
-      question: String,
-      options: [{ text: String, votes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }] }],
-      endsAt: Date,
-    },
     pinned: { type: Boolean, default: false },
     isAnnouncement: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },

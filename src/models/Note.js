@@ -16,35 +16,7 @@ const noteSchema = new mongoose.Schema(
     },
     downloads: { type: Number, default: 0 },
     tags: [{ type: String, trim: true }],
-    // Features 53, 54, 59
-    citation: { type: String, default: "" },
-    sourceUrl: { type: String, default: "" },
-    version: { type: Number, default: 1 },
-    changelog: [
-      {
-        version: Number,
-        note: String,
-        at: { type: Date, default: Date.now },
-        by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      },
-    ],
-    ratings: [
-      {
-        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        score: { type: Number, min: 1, max: 5 },
-        review: String,
-      },
-    ],
-    avgRating: { type: Number, default: 0 },
-    annotations: [
-      {
-        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        page: Number,
-        text: String,
-        highlight: String,
-        createdAt: { type: Date, default: Date.now },
-      },
-    ],
+
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
   },

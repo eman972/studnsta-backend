@@ -17,17 +17,19 @@ exports.getUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (
-      !isOwner &&
-      user.privacy === "private"
-    ) {
-      return res.status(403).json({ message: "Profile is private" });
-    }
-
     const viewer = await User.findById(req.user.id);
     const isFollowing = (viewer.following || []).some(
       (id) => id.toString() === user._id.toString()
     );
+
+    if (!isOwner) {
+      if (user.privacy === "private") {
+        return res.status(403).json({ message: "Profile is private" });
+      }
+      if (user.privacy === "followers" && !isFollowing) {
+        return res.status(403).json({ message: "Profile is restricted to followers" });
+      }
+    }
     const totalPosts = await Post.countDocuments({ author: targetUserId });
 
     res.json({
